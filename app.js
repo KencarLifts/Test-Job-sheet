@@ -1,3 +1,5 @@
+/* PWA: register early so that errors elsewhere cannot prevent installation */
+if('serviceWorker' in navigator&&location.protocol!='file:')addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{scope:'./'}).catch(e=>console.warn('SW registration failed',e)));
 const CFG=window.JOBSHEETS_CONFIG||{};
 const $=id=>document.getElementById(id),B='#153f89';
 const DS={brand:'KENCAR',sub:'GROUP',name:'Kencar Group of Companies',addr:'168, Industrial Estate, Luqa',tel:'+356 2138 2091',mob:'+356 9999 4575',email:'servicing@kencar.net',web:'www.kencar.net',vatno:'MT 1992 8816',vat:18,next:12160,suf:'A'};
@@ -260,8 +262,13 @@ window.addEventListener('message',async e=>{
  else if(m.type=='jobsheets:search'){$('q').value=m.q||'';extFilter=m.ext||'';renderList();show('list')}});
 $('exf').onclick=e=>{if(e.target.dataset.c){e.preventDefault();extFilter='';renderList()}};
 if(EMBED&&window.ResizeObserver)new ResizeObserver(()=>post('height',{height:document.documentElement.scrollHeight})).observe(document.body);
-let ip;addEventListener('beforeinstallprompt',e=>{e.preventDefault();ip=e;if(!EMBED)$('inst').hidden=false});
-$('inst').onclick=async()=>{if(!ip)return;ip.prompt();await ip.userChoice;ip=null;$('inst').hidden=true};
+let ip;const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();ip=e});
+addEventListener('appinstalled',()=>{$('inst').hidden=true});
+if(!EMBED&&!standalone)$('inst').hidden=false;
+$('inst').onclick=async()=>{
+ if(ip){ip.prompt();await ip.userChoice;ip=null;return}
+ const ios=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform=='MacIntel'&&navigator.maxTouchPoints>1);
+ alert(ios?'To install: tap the Share button, then “Add to Home Screen”.':'To install: open the browser menu and choose “Install app” or “Add to Home screen”. If the option is missing, reload the page once and try again.')};
 const ofl=()=>{$('off').hidden=navigator.onLine};addEventListener('online',ofl);addEventListener('offline',ofl);ofl();
-if('serviceWorker' in navigator&&location.protocol!='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 init();
