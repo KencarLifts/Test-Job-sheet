@@ -2,7 +2,7 @@
 if('serviceWorker' in navigator&&location.protocol!='file:')addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{scope:'./'}).catch(e=>console.warn('SW registration failed',e)));
 const CFG=window.JOBSHEETS_CONFIG||{};
 const $=id=>document.getElementById(id),B='#153f89';
-const DS={brand:'KENCAR',sub:'GROUP',name:'Kencar Group of Companies',addr:'168, Industrial Estate, Luqa',tel:'+356 2138 2091',mob:'+356 9999 4575',email:'servicing@kencar.net',web:'www.kencar.net',vatno:'MT 1992 8816',vat:18,next:12160,suf:'A'};
+const DS={brand:'KENCAR',sub:'GROUP',name:'Kencar Group of Companies',addr:'168, Industrial Estate, Luqa',tel:'+356 2138 2091',mob:'+356 9999 4575',email:'servicing@kencar.net',web:'www.kencar.net',vatno:'MT 1992 8816',vat:18,next:12160,suf:'A',subjects:'Installation\nService\nRepair\nMaintenance\nInspection\nWarranty repair\nDelivery'};
 const DEFAULT_LOGO='assets/logo.png';
 let sb,me=null,S={...DS},cur=null,uid0=null,signup=false,recovering=/type=recovery/.test(location.hash);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -99,6 +99,16 @@ cv.data=()=>cv.dirty?cv.toDataURL('image/png'):''}
 pad($('p1'));pad($('p2'));
 document.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>$(b.dataset.c).clear());
 
+/* ---------- subject presets ---------- */
+const presets=()=>String(S.subjects||'').split('\n').map(x=>x.trim()).filter(Boolean);
+function subjSync(v){const p=presets(),sel=$('subjsel'),inp=$('subj');
+ sel.innerHTML='<option value="">— Select —</option>'+p.map(x=>'<option>'+esc(x)+'</option>').join('')+'<option value="__o">Other (type manually)…</option>';
+ if(v&&p.includes(v)){sel.value=v;inp.style.display='none'}
+ else if(v){sel.value='__o';inp.style.display='block'}
+ else{sel.value='';inp.style.display='none'}
+ inp.value=v}
+$('subjsel').onchange=()=>{const v=V('subjsel'),inp=$('subj');if(v=='__o'){inp.value='';inp.style.display='block';inp.focus()}else{inp.style.display='none';inp.value=v}};
+
 /* ---------- form <-> doc ---------- */
 const V=id=>$(id).value,R=n=>+document.querySelector('[name='+n+']:checked').value;
 function collect(){return{no:V('num').trim(),type:R('t'),date:V('date'),client:V('client'),addr:V('addr'),tel:V('tel'),vat:V('vat'),subj:V('subj'),price:V('price'),inst:V('inst'),pay:R('p'),
@@ -111,7 +121,7 @@ async function techOpts(sel){
  $('tech').value=sel||own;$('tech').disabled=!isAdmin()}
 function fill(d,id){cur=id?{id}:null;curExt=d.ext||'';document.querySelector('[name=t][value="'+d.type+'"]').checked=true;document.querySelector('[name=p][value="'+d.pay+'"]').checked=true;
 ['num:no','date','client','addr','tel','vat','subj','price','inst','vr','mat','tin','tout','rec','rp','cn','cid'].forEach(k=>{const[i,f]=k.split(':');$(i).value=d[f||i]??''});
-$('rows').innerHTML='';(d.rows&&d.rows.length?d.rows:[{},{},{}]).forEach(r=>row(r.d,r.a));grow($('mat'));
+subjSync(d.subj||'');$('rows').innerHTML='';(d.rows&&d.rows.length?d.rows:[{}]).forEach(r=>row(r.d,r.a));grow($('mat'));
 $('p1').load(d.s1);$('p2').load(d.s2);techOpts(d.tech);info()}
 function newDoc(pf={}){$('b3').style.display='';fill({type:0,no:'',date:new Date().toISOString().slice(0,10),pay:-1,rows:[],vr:S.vat,rp:-1,tech:'',ext:extFilter,...pf},null);$('tech').value=me.full_name||me.email;go(1);show('edit')}
 
@@ -139,7 +149,7 @@ async function renderList(){
  if(q)r=r.or('client.ilike.%'+q+'%,no.ilike.%'+q+'%');
  const{data,error}=await r;
  if(error){$('docs').innerHTML='<p class="m er">'+esc(error.message)+'</p>';return}
- $('docs').innerHTML=data.length?data.map(d=>'<div class="box it" data-id="'+d.id+'"><b>'+esc(d.no)+' · '+esc(d.client||'(no client)')+'</b><small>'+['Job Sheet','Invoice','Cash Sale'][d.type]+' · '+fD(d.doc_date)+' · Total '+Number(d.total||0).toFixed(2)+(d.tech?' · '+esc(d.tech):'')+'</small><div class="ab"><button data-a="o" type="button">Open</button>'+((isAdmin()||d.created_by==me.id)?'<button class="s" data-a="e" type="button">Edit</button>':'')+'<button class="s" data-a="p" type="button">PDF</button>'+(isAdmin()?'<button class="s d" data-a="x" type="button">Delete</button>':'')+'</div></div>').join(''):'<p class="m">'+(q?'No matches.':'No documents yet. Tap “+ New”.')+'</p>'}
+ $('docs').innerHTML=data.length?data.map(d=>'<div class="box it" data-id="'+d.id+'"><b>'+esc(d.no)+' · '+esc(d.client||'(no client)')+'</b><small>'+['Job Sheet','Invoice','Cash Sale'][d.type]+' · '+fD(d.doc_date)+' · Total '+Number(d.total||0).toFixed(2)+(d.tech?' · '+esc(d.tech):'')+'</small><div class="ab"><button data-a="o" type="button">Open</button>'+((isAdmin()||d.created_by==me.id)?'<button class="s" data-a="e" type="button">Edit</button>':'')+''+(isAdmin()?'<button class="s" data-a="p" type="button">PDF</button>':'')+''+(isAdmin()?'<button class="s d" data-a="x" type="button">Delete</button>':'')+'</div></div>').join(''):'<p class="m">'+(q?'No matches.':'No documents yet. Tap “+ New”.')+'</p>'}
 async function getDoc(id){const{data,error}=await sb.from('documents').select('id,no,data,created_by').eq('id',id).single();if(error){alert(error.message);return null}return{...data.data,no:data.no,id:data.id,cb:data.created_by}}
 $('docs').onclick=async e=>{const b=e.target.closest('[data-a]');if(!b)return;const box=b.closest('[data-id]'),id=box.dataset.id,a=b.dataset.a;
  if(a=='x'){if(confirm('Delete this document?')){const{error}=await sb.from('documents').delete().eq('id',id);if(error)alert(error.message);renderList()}return}
@@ -155,7 +165,7 @@ $('bl').onclick=()=>{renderList();show('list')};
 $('dl').onclick=()=>pdf({...collect(),no:$('num').value});
 
 /* ---------- settings ---------- */
-const SF={brand:'st_brand',sub:'st_sub',name:'st_name',addr:'st_addr',tel:'st_tel',mob:'st_mob',email:'st_email',web:'st_web',vatno:'st_vatno',vat:'st_vat',next:'st_next',suf:'st_suf'};
+const SF={brand:'st_brand',sub:'st_sub',name:'st_name',addr:'st_addr',tel:'st_tel',mob:'st_mob',email:'st_email',web:'st_web',vatno:'st_vatno',vat:'st_vat',next:'st_next',suf:'st_suf',subjects:'st_subjects'};
 async function loadSettings(){const{data}=await sb.from('app_settings').select('*').eq('id',1).single();if(data)S={...DS,...(data.data||{}),next:data.next_no,suf:data.suffix}}
 async function fillSet(){await loadSettings();const a=isAdmin();for(const k in SF){$(SF[k]).value=S[k];$(SF[k]).disabled=!a}$('lgp').src=S.logo||DEFAULT_LOGO;$('lgf').disabled=$('lgr').disabled=!a;$('ssv').style.display=a?'block':'none';$('sm').textContent=a?'':'Only administrators can change settings.';if(a)loadUsers()}
 $('ssv').onclick=async()=>{const n={};for(const k in SF)n[k]=V(SF[k]);const{next,suf,...rest}=n;rest.logo=S.logo||'';

@@ -72,7 +72,8 @@
 <label>Address</label><input id="addr">
 <div class="g"><div><label>Telephone</label><input id="tel" type="tel"></div>
 <div><label>VAT No</label><input id="vat"></div></div>
-<label>Subject</label><input id="subj">
+<label>Subject</label><select id="subjsel"></select>
+<input id="subj" placeholder="Type the subject" style="display:none;margin-top:8px">
 <h2>Payment and dates</h2>
 <div class="g"><div><label>Price</label><input id="price"></div>
 <div><label>App. Inst. Date</label><input id="inst" type="date"></div></div>
@@ -127,7 +128,7 @@
 <div id="set" class="v">
 <div class="box">
 <h2>Logo</h2>
-<div style="display:flex;gap:12px;align-items:center"><img id="lgp" alt="Logo" style="height:90px;background:#fff;border:1px solid var(--bd);border-radius:8px;padding:4px"><div style="flex:1"><input id="lgf" type="file" accept="image/*"><button class="s" id="lgr" type="button">Use default logo</button></div></div>
+<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><img id="lgp" alt="Logo" style="height:90px;background:#fff;border:1px solid var(--bd);border-radius:8px;padding:4px"><div style="flex:1 1 180px;min-width:0"><input id="lgf" type="file" accept="image/*"><button class="s" id="lgr" type="button">Use default logo</button></div></div>
 <p class="m">The logo is shown in the top left corner of the PDF. Press “Save settings” after changing it.</p>
 <h2>Company</h2>
 <div class="g"><div><label>Header text</label><input id="st_brand"></div><div><label>Header subtitle</label><input id="st_sub"></div></div>
@@ -136,6 +137,8 @@
 <div class="g"><div><label>Tel/Fax</label><input id="st_tel"></div><div><label>Mobile</label><input id="st_mob"></div></div>
 <div class="g"><div><label>Email</label><input id="st_email"></div><div><label>Web</label><input id="st_web"></div></div>
 <div class="g"><div><label>VAT Reg No</label><input id="st_vatno"></div><div><label>Default VAT %</label><input id="st_vat" type="number" inputmode="decimal"></div></div>
+<h2>Subject presets</h2>
+<label>One per line – shown in the Subject drop-down</label><textarea id="st_subjects" rows="6" style="overflow:auto;resize:vertical"></textarea>
 <h2>Numbering</h2>
 <div class="g"><div><label>Next number</label><input id="st_next" type="number" inputmode="numeric"></div><div><label>Suffix (e.g. A)</label><input id="st_suf"></div></div>
 <button id="ssv" type="button">Save settings</button>
