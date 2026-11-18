@@ -69,3 +69,4 @@ label,h2,.m,.it b,.it small,.tot,.ul span{overflow-wrap:anywhere}
  .steps div{font-size:12px;padding:8px 2px}
 }
 @media(max-width:340px){.g{grid-template-columns:minmax(0,1fr)}}
+#bar{flex-direction:column;align-items:flex-end;gap:6px}#who{margin-right:0;text-align:right}#bar .bb{display:flex;gap:8px}

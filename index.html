@@ -15,7 +15,7 @@
 </head>
 <body>
 <main>
-<h1>Job Sheets</h1>
+<h1 id="ttl">Job Sheets</h1>
 
 <div id="cfg" class="top box"><b id="cfgt">Not configured.</b><p class="m" id="cfgm">Open <code>index.html</code> and set your Supabase URL and anon key in the <code>CFG</code> constant (see README).</p></div>
 
@@ -40,7 +40,7 @@
 <button id="wr" type="button">Check again</button><button class="s" id="wo" type="button">Sign out</button></div>
 
 <div id="app" class="top">
-<div id="bar"><span id="who"></span><button class="s" id="inst" type="button" hidden>Install app</button><button class="s" id="so" type="button">Sign out</button></div>
+<div id="bar"><span id="who"></span><div class="bb"><button class="s" id="inst" type="button" hidden>Install app</button><button class="s" id="so" type="button">Sign out</button></div></div>
 <p class="m er" id="off" hidden>You are offline. Data cannot be saved until the connection returns.</p>
 <nav><button data-v="list" class="on">Documents</button><button data-v="new">+ New</button><button data-v="set" id="nset">Settings</button></nav>
 
@@ -56,7 +56,6 @@
 </div>
 
 <div id="edit" class="v">
-<div class="steps"><div class="on">1. Details</div><div>2. Signatures</div><div>3. PDF</div></div>
 
 <div id="s1" class="st on box">
 <h2>Document type</h2>
@@ -69,11 +68,11 @@
 <div><label>Date</label><input id="date" type="date"></div></div>
 <h2>Client</h2>
 <label>Client</label><input id="client">
-<label>Address</label><input id="addr">
+<label>Address</label><textarea id="addr" rows="1" placeholder="Street, Locality, Country"></textarea>
 <div class="g"><div><label>Telephone</label><input id="tel" type="tel"></div>
 <div><label>VAT No</label><input id="vat"></div></div>
 <label>Subject</label><select id="subjsel"></select>
-<input id="subj" placeholder="Type the subject" style="display:none;margin-top:8px">
+<textarea id="subj" rows="1" placeholder="Type the subject" style="display:none;margin-top:8px"></textarea>
 <h2>Payment and dates</h2>
 <div class="g"><div><label>Price</label><input id="price"></div>
 <div><label>App. Inst. Date</label><input id="inst" type="date"></div></div>

@@ -52,16 +52,18 @@ $('wr').onclick=()=>{uid0=null;sb.auth.getSession().then(({data})=>boot(data.ses
 
 /* ---------- views ---------- */
 function show(v){['list','edit','set'].forEach(i=>$(i).classList.toggle('on',i==v));
- document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v==(v=='edit'?'new':v)));scrollTo(0,0)}
-function go(n){[1,2,3].forEach(i=>{$('s'+i).classList.toggle('on',i==n);document.querySelectorAll('.steps div')[i-1].classList.toggle('on',i<=n)});scrollTo(0,0)}
+ document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v==(v=='edit'?'new':v)));if(v=='edit')growAll();scrollTo(0,0)}
+function go(n){[1,2,3].forEach(i=>$('s'+i).classList.toggle('on',i==n));growAll();scrollTo(0,0)}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{const v=b.dataset.v;if(v=='new')newDoc();else if(v=='list'){renderList();show('list')}else if(isAdmin()){fillSet();show('set')}});
 
 /* ---------- job description rows (auto-wrapping) ---------- */
-const grow=t=>{t.style.height='auto';t.style.height=t.scrollHeight+'px'};
+const grow=t=>{t.style.height='auto';if(t.scrollHeight)t.style.height=t.scrollHeight+'px'};
+const growAll=()=>document.querySelectorAll('#edit textarea').forEach(grow);
 function row(d='',a=''){const e=document.createElement('div');e.className='row';e.innerHTML='<textarea class="ds" rows="1" placeholder="Description"></textarea><input class="am" type="number" inputmode="decimal" step="0.01" placeholder="Amount">';
  const t=e.children[0];t.value=d;e.children[1].value=a;t.oninput=()=>{grow(t);info()};e.children[1].oninput=info;$('rows').appendChild(e);grow(t)}
 $('add').onclick=()=>row();
-$('mat').oninput=()=>{grow($('mat'));info()};$('vr').oninput=info;
+$('mat').oninput=()=>{grow($('mat'));info()};
+$('addr').oninput=()=>grow($('addr'));$('subj').oninput=()=>grow($('subj'));$('vr').oninput=info;
 function info(){const d=collect(),t=tot(d),L=layout(d,mctx);
  $('tt').textContent='Sub: '+t.s.toFixed(2)+' · VAT: '+t.v.toFixed(2)+' · Total: '+t.t.toFixed(2);
  $('ln').textContent='Lines used: '+L.job.length+' / '+L.cap+(L.jobOver?' – too long, text will be cut off':'');$('ln').className='m'+(L.jobOver?' er':'');
@@ -77,6 +79,17 @@ function wrap(x,t,fs,wf){x.font=fs+'px Arial,Helvetica,sans-serif';const o=[];
    const tr=line?line+' '+w:w;if(x.measureText(tr).width<=wf(o.length))line=tr;else{o.push(line);line=w}});
   o.push(line)});
  while(o.length&&!o[o.length-1])o.pop();return o}
+const flat=t=>String(t||'').replace(/\s*\n\s*/g,' ').trim();
+function fitLines(x,t,wf,cap){t=flat(t);let L;for(let fs=23;fs>=14;fs--){L=wrap(x,t,fs,wf);if(L.length<=cap)return{lines:L,fs}}return{lines:L.slice(0,cap),fs:14}}
+/* address: line breaks after commas (one part per line; parts are merged only if there are too many) */
+function addrLines(x,t,wf,cap){t=flat(t);const parts=t.split(',').map(s=>s.trim()).filter(Boolean).map((s,i,a)=>i<a.length-1?s+',':s);let last;
+ for(let fs=23;fs>=14;fs--){
+  const A=[];parts.forEach(p=>wrap(x,p,fs,i=>wf(A.length+i)).forEach(l=>A.push(l)));if(A.length<=cap)return{lines:A,fs};
+  x.font=fs+'px Arial,Helvetica,sans-serif';const G=[];let line='';
+  parts.forEach(p=>{const tr=line?line+' '+p:p;if(x.measureText(tr).width<=wf(G.length))line=tr;else{if(line)G.push(line);line=p}});if(line)G.push(line);
+  if(G.length<=cap&&G.every((l,i)=>x.measureText(l).width<=wf(i)))return{lines:G,fs};
+  last=wrap(x,parts.join(' '),fs,wf);if(last.length<=cap)return{lines:last,fs}}
+ return{lines:last.slice(0,cap),fs:14}}
 function layout(d,x){
  const rows=d.rows.filter(r=>(r.d||'').trim()||r.a!=='');
  const build=fs=>{const a=[];rows.forEach(r=>{const ls=wrap(x,r.d,fs,()=>860);if(!ls.length)ls.push('');ls.forEach((l,i)=>a.push({t:l,a:i?'':r.a}))});return a};
@@ -107,7 +120,7 @@ function subjSync(v){const p=presets(),sel=$('subjsel'),inp=$('subj');
  else if(v){sel.value='__o';inp.style.display='block'}
  else{sel.value='';inp.style.display='none'}
  inp.value=v}
-$('subjsel').onchange=()=>{const v=V('subjsel'),inp=$('subj');if(v=='__o'){inp.value='';inp.style.display='block';inp.focus()}else{inp.style.display='none';inp.value=v}};
+$('subjsel').onchange=()=>{const v=V('subjsel'),inp=$('subj');if(v=='__o'){inp.value='';inp.style.display='block';grow(inp);inp.focus()}else{inp.style.display='none';inp.value=v}};
 
 /* ---------- form <-> doc ---------- */
 const V=id=>$(id).value,R=n=>+document.querySelector('[name='+n+']:checked').value;
@@ -166,11 +179,12 @@ $('dl').onclick=()=>pdf({...collect(),no:$('num').value});
 
 /* ---------- settings ---------- */
 const SF={brand:'st_brand',sub:'st_sub',name:'st_name',addr:'st_addr',tel:'st_tel',mob:'st_mob',email:'st_email',web:'st_web',vatno:'st_vatno',vat:'st_vat',next:'st_next',suf:'st_suf',subjects:'st_subjects'};
-async function loadSettings(){const{data}=await sb.from('app_settings').select('*').eq('id',1).single();if(data)S={...DS,...(data.data||{}),next:data.next_no,suf:data.suffix}}
+async function loadSettings(){const{data}=await sb.from('app_settings').select('*').eq('id',1).single();if(data)S={...DS,...(data.data||{}),next:data.next_no,suf:data.suffix};setTitle()}
+function setTitle(){const t=(S.name?S.name+' - ':'')+'Job Sheets';$('ttl').textContent=t;document.title=t}
 async function fillSet(){await loadSettings();const a=isAdmin();for(const k in SF){$(SF[k]).value=S[k];$(SF[k]).disabled=!a}$('lgp').src=S.logo||DEFAULT_LOGO;$('lgf').disabled=$('lgr').disabled=!a;$('ssv').style.display=a?'block':'none';$('sm').textContent=a?'':'Only administrators can change settings.';if(a)loadUsers()}
 $('ssv').onclick=async()=>{const n={};for(const k in SF)n[k]=V(SF[k]);const{next,suf,...rest}=n;rest.logo=S.logo||'';
  const{error}=await sb.from('app_settings').update({data:rest,next_no:parseInt(next)||1,suffix:suf}).eq('id',1);
- $('sm').textContent=error?error.message:'Settings saved.';if(!error)S={...DS,...rest,next:parseInt(next)||1,suf}};
+ $('sm').textContent=error?error.message:'Settings saved.';if(!error){S={...DS,...rest,next:parseInt(next)||1,suf};setTitle()}};
 $('lgf').onchange=e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const fr=new FileReader();
  fr.onload=()=>{const i=new Image();i.onload=()=>{const r=Math.min(1,500/i.height),c=document.createElement('canvas');c.width=Math.round(i.width*r);c.height=Math.round(i.height*r);c.getContext('2d').drawImage(i,0,0,c.width,c.height);S.logo=c.toDataURL('image/png');$('lgp').src=S.logo;$('sm').textContent='Logo changed. Press “Save settings” to keep it.'};i.onerror=()=>alert('Could not read this image.');i.src=fr.result};fr.readAsDataURL(f)};
 $('lgr').onclick=()=>{S.logo='';$('lgp').src=DEFAULT_LOGO;$('sm').textContent='Default logo selected. Press “Save settings” to keep it.'};
@@ -217,8 +231,11 @@ x.fillStyle=B;x.fillRect(0,200,1240,80);
 [['JOB SHEET',60,225],['INVOICE',470,590],['CASH SALE',880,1040]].forEach((a,i)=>{T(a[0],a[1],252,26,true,'#fff');RR(a[2],212,i==2?170:150,52,12,'#fff');if(d.type==i)T('✓',a[2]+(i==2?85:75),252,34,true,B,'center')});
 T(d.no,1170,352,38,true,'#111','right',300);
 const lf=(lab,v,y,x2,lx)=>{T(lab,lx,y,23,false,'#222');const s=lx+x.measureText(lab).width+12;L(s,y+6,x2,y+6,1,'#999');T(v,s+6,y-3,23,false,'#0a1a6e','left',x2-s-10)};
-lf('Client:',d.client,368,590,80);lf('Address:',d.addr,408,590,80);L(80,448,590,448,1,'#999');L(80,488,590,488,1,'#999');
-lf('Telephone:',d.tel,528,590,80);lf('Vat No:',d.vat,568,590,80);lf('Subject:',d.subj,608,590,80);L(80,648,1170,648,1,'#999');
+lf('Client:',d.client,368,590,80);lf('Address:','',408,590,80);const aw=x.measureText('Address:').width,as=80+aw+12;
+const AD=addrLines(x,d.addr,i=>i?500:590-as-10,3);AD.lines.forEach((l,i)=>T(l,i?86:as+6,[405,445,485][i],AD.fs,false,'#0a1a6e'));
+L(80,448,590,448,1,'#999');L(80,488,590,488,1,'#999');
+lf('Telephone:',d.tel,528,590,80);lf('Vat No:',d.vat,568,590,80);lf('Subject:','',608,1170,80);const sw=x.measureText('Subject:').width,ss=80+sw+12;
+const SJ=fitLines(x,d.subj,i=>i?1080:1170-ss-10,2);SJ.lines.forEach((l,i)=>T(l,i?86:ss+6,[605,645][i],SJ.fs,false,'#0a1a6e'));L(80,648,1170,648,1,'#999');
 lf('Date:',fD(d.date),448,1170,640);lf('Price:',d.price,488,1170,640);lf('App. Inst. Date:',fD(d.inst),528,1170,640);
 T('PAYMENT:',640,574,23,true);T('Warranty',770,574,23);CK(865,546,d.pay==0);T('Cash',930,574,23);CK(985,546,d.pay==1);T('Invoice',1050,574,23);CK(1130,546,d.pay==2);
 x.fillStyle=B;x.fillRect(78,690,1092,80);T('JOB DESCRIPTION',98,742,26,true,'#fff');T('AMOUNT',1148,740,26,true,'#fff','right');

@@ -1,6 +1,6 @@
 /* Service worker: caches the app shell so the app opens instantly and offline.
    Supabase (cross-origin) requests are never cached. Bump VERSION after every update. */
-const VERSION = 'jobsheets-v4';
+const VERSION = 'jobsheets-v5';
 const SHELL = ['./', 'index.html', 'styles.css', 'app.js', 'config.js', 'embed.js', 'manifest.json',
   'assets/logo.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
   'vendor/supabase.js', 'vendor/591.supabase.js', 'vendor/jspdf.umd.min.js'];
