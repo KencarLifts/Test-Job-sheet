@@ -57,9 +57,17 @@ end $$;
 revoke all on function public.take_number() from public, anon;
 grant execute on function public.take_number() to authenticated;
 
+create or replace function public.is_mine(doc_author uuid, doc_tech text) returns boolean language sql stable security definer set search_path=public as
+$$ select coalesce((select p.approved and (doc_author=p.id or (btrim(coalesce(doc_tech,''))<>'' and lower(btrim(doc_tech)) in (lower(btrim(coalesce(p.full_name,''))), lower(btrim(coalesce(p.email,'')))))) from profiles p where p.id=auth.uid()),false) $$;
+
 alter table public.profiles enable row level security;
 alter table public.app_settings enable row level security;
 alter table public.documents enable row level security;
+
+-- administrators see everything; a technician sees only documents created by him or assigned to him (Technician name)
+create policy "docs read" on public.documents for select to authenticated using (is_admin() or is_mine(created_by,tech));
+create policy "docs update" on public.documents for update to authenticated
+  using (is_admin() or is_mine(created_by,tech)) with check (is_admin() or is_mine(created_by,tech));
 
 create policy "profiles read" on public.profiles for select to authenticated using (id=auth.uid() or is_approved());
 create policy "profiles own update" on public.profiles for update to authenticated
@@ -69,12 +77,7 @@ create policy "profiles admin update" on public.profiles for update to authentic
 create policy "settings read" on public.app_settings for select to authenticated using (is_approved());
 create policy "settings admin update" on public.app_settings for update to authenticated using (is_admin()) with check (is_admin());
 
-create policy "docs read" on public.documents for select to authenticated using (is_approved());
 create policy "docs insert" on public.documents for insert to authenticated with check (is_approved() and (created_by=auth.uid() or is_admin()));
--- only the author or an administrator can edit a saved document
-create policy "docs update" on public.documents for update to authenticated
-  using (is_approved() and (created_by=auth.uid() or is_admin()))
-  with check (is_approved() and (created_by=auth.uid() or is_admin()));
 create policy "docs delete (admin)" on public.documents for delete to authenticated using (is_admin());
 
 -- assign imported documents to technicians by the name written on them (admin button in Settings)

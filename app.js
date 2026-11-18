@@ -10,6 +10,7 @@ const fD=v=>{if(!v)return'';const[a,b,c]=v.split('-');return c+'/'+b+'/'+a};
 const tot=d=>{const s=d.rows.reduce((a,r)=>a+(parseFloat(r.a)||0),0),v=s*(parseFloat(d.vr)||0)/100;return{s,v,t:s+v}};
 const scr=n=>['cfg','auth','rec','wait','app'].forEach(i=>$(i).classList.toggle('on',i==n));
 const isAdmin=()=>me&&me.approved&&me.role=='admin';
+const mine=(author,tech)=>isAdmin()||author==me.id||!!(tech&&[me.full_name,me.email].filter(Boolean).map(s=>s.trim().toLowerCase()).includes(String(tech).trim().toLowerCase()));
 
 /* ---------- auth ---------- */
 function fail(m){$('cfgt').textContent='Error';$('cfgm').textContent=m;scr('cfg')}
@@ -112,6 +113,10 @@ cv.data=()=>cv.dirty?cv.toDataURL('image/png'):''}
 pad($('p1'));pad($('p2'));
 document.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>$(b.dataset.c).clear());
 
+/* ---------- client not present ---------- */
+const CNP='Client not present';
+$('cnp').onchange=()=>{const on=$('cnp').checked;if(on)$('cn').value=CNP;else if($('cn').value===CNP)$('cn').value='';$('cn').readOnly=on};
+
 /* ---------- subject presets ---------- */
 const presets=()=>String(S.subjects||'').split('\n').map(x=>x.trim()).filter(Boolean);
 function subjSync(v){const p=presets(),sel=$('subjsel'),inp=$('subj');
@@ -134,7 +139,7 @@ async function techOpts(sel){
  $('tech').value=sel||own;$('tech').disabled=!isAdmin()}
 function fill(d,id){cur=id?{id}:null;curExt=d.ext||'';document.querySelector('[name=t][value="'+d.type+'"]').checked=true;document.querySelector('[name=p][value="'+d.pay+'"]').checked=true;
 ['num:no','date','client','addr','tel','vat','subj','price','inst','vr','mat','tin','tout','rec','rp','cn','cid'].forEach(k=>{const[i,f]=k.split(':');$(i).value=d[f||i]??''});
-subjSync(d.subj||'');$('rows').innerHTML='';(d.rows&&d.rows.length?d.rows:[{}]).forEach(r=>row(r.d,r.a));grow($('mat'));
+subjSync(d.subj||'');$('cnp').checked=(d.cn===CNP);$('cn').readOnly=$('cnp').checked;$('rows').innerHTML='';(d.rows&&d.rows.length?d.rows:[{}]).forEach(r=>row(r.d,r.a));grow($('mat'));
 $('p1').load(d.s1);$('p2').load(d.s2);techOpts(d.tech);info()}
 function newDoc(pf={}){$('b3').style.display='';fill({type:0,no:'',date:new Date().toISOString().slice(0,10),pay:-1,rows:[],vr:S.vat,rp:-1,tech:'',ext:extFilter,...pf},null);$('tech').value=me.full_name||me.email;go(1);show('edit')}
 
@@ -162,13 +167,13 @@ async function renderList(){
  if(q)r=r.or('client.ilike.%'+q+'%,no.ilike.%'+q+'%');
  const{data,error}=await r;
  if(error){$('docs').innerHTML='<p class="m er">'+esc(error.message)+'</p>';return}
- $('docs').innerHTML=data.length?data.map(d=>'<div class="box it" data-id="'+d.id+'"><b>'+esc(d.no)+' · '+esc(d.client||'(no client)')+'</b><small>'+['Job Sheet','Invoice','Cash Sale'][d.type]+' · '+fD(d.doc_date)+' · Total '+Number(d.total||0).toFixed(2)+(d.tech?' · '+esc(d.tech):'')+'</small><div class="ab"><button data-a="o" type="button">Open</button>'+((isAdmin()||d.created_by==me.id)?'<button class="s" data-a="e" type="button">Edit</button>':'')+''+(isAdmin()?'<button class="s" data-a="p" type="button">PDF</button>':'')+''+(isAdmin()?'<button class="s d" data-a="x" type="button">Delete</button>':'')+'</div></div>').join(''):'<p class="m">'+(q?'No matches.':'No documents yet. Tap “+ New”.')+'</p>'}
+ $('docs').innerHTML=data.length?data.map(d=>'<div class="box it" data-id="'+d.id+'"><b>'+esc(d.no)+' · '+esc(d.client||'(no client)')+'</b><small>'+['Job Sheet','Invoice','Cash Sale'][d.type]+' · '+fD(d.doc_date)+' · Total '+Number(d.total||0).toFixed(2)+(d.tech?' · '+esc(d.tech):'')+'</small><div class="ab"><button data-a="o" type="button">Open</button>'+(mine(d.created_by,d.tech)?'<button class="s" data-a="e" type="button">Edit</button>':'')+''+(isAdmin()?'<button class="s" data-a="p" type="button">PDF</button>':'')+''+(isAdmin()?'<button class="s d" data-a="x" type="button">Delete</button>':'')+'</div></div>').join(''):'<p class="m">'+(q?'No matches.':'No documents yet. Tap “+ New”.')+'</p>'}
 async function getDoc(id){const{data,error}=await sb.from('documents').select('id,no,data,created_by').eq('id',id).single();if(error){alert(error.message);return null}return{...data.data,no:data.no,id:data.id,cb:data.created_by}}
 $('docs').onclick=async e=>{const b=e.target.closest('[data-a]');if(!b)return;const box=b.closest('[data-id]'),id=box.dataset.id,a=b.dataset.a;
  if(a=='x'){if(confirm('Delete this document?')){const{error}=await sb.from('documents').delete().eq('id',id);if(error)alert(error.message);renderList()}return}
  b.disabled=true;const d=await getDoc(id);b.disabled=false;if(!d)return;
  if(a=='p'){await pdf(d);return}
- fill(d,id);cur={id,no:d.no,ro:!(isAdmin()||d.cb==me.id)};$('b3').style.display=cur.ro?'none':'';show('edit');if(a=='e')go(1);else{await draw(d,$('pv'));go(3)}};
+ fill(d,id);cur={id,no:d.no,ro:!mine(d.cb,d.tech)};$('b3').style.display=cur.ro?'none':'';show('edit');if(a=='e')go(1);else{await draw(d,$('pv'));go(3)}};
 
 /* ---------- flow ---------- */
 $('n1').onclick=()=>go(2);$('b2').onclick=()=>go(1);$('b3').onclick=()=>go(2);
@@ -289,7 +294,7 @@ if(QP.get('nav')==='0')document.body.classList.add('nonav');
 if(QP.get('bar')==='0')document.body.classList.add('nobar');
 if(/^#[0-9a-f]{3,8}$/i.test(QP.get('accent')||''))document.documentElement.style.setProperty('--pr',QP.get('accent'));
 const post=(type,data)=>{if(!EMBED)return;AO.forEach(o=>{try{window.parent.postMessage({type:'jobsheets:'+type,...data},o)}catch(e){}})};
-async function openDoc(id,mode){const d=await getDoc(id);if(!d)return;fill(d,id);cur={id,no:d.no,ro:!(isAdmin()||d.cb==me.id)};$('b3').style.display=cur.ro?'none':'';show('edit');
+async function openDoc(id,mode){const d=await getDoc(id);if(!d)return;fill(d,id);cur={id,no:d.no,ro:!mine(d.cb,d.tech)};$('b3').style.display=cur.ro?'none':'';show('edit');
  if(mode=='edit'&&!cur.ro)go(1);else{await draw(d,$('pv'));go(3)}}
 function route(){if(routed)return;routed=true;
  if(QP.get('doc'))return openDoc(QP.get('doc'),QP.get('mode'));

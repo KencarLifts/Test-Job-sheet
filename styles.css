@@ -74,3 +74,4 @@ label,h2,.m,.it b,.it small,.tot,.ul span{overflow-wrap:anywhere}
 .ei{display:flex;gap:10px;align-items:flex-start;margin:0;padding:10px 0;border-bottom:1px solid var(--bd);color:var(--tx);font-size:16px}
 .ei input{width:24px;height:24px;min-height:24px;flex:none;margin-top:2px}
 .ei small{color:var(--mu)}
+.lr{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;margin:10px 0 4px}.lr label{margin:0}.cb{display:flex;align-items:center;gap:6px;color:var(--tx);font-size:15px;white-space:nowrap}.cb input{width:22px;height:22px;min-height:22px;flex:none}
