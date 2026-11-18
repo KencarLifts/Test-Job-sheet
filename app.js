@@ -51,8 +51,8 @@ const out_=()=>sb.auth.signOut();$('so').onclick=out_;$('wo').onclick=out_;
 $('wr').onclick=()=>{uid0=null;sb.auth.getSession().then(({data})=>boot(data.session))};
 
 /* ---------- views ---------- */
-function show(v){['list','edit','set'].forEach(i=>$(i).classList.toggle('on',i==v));
- document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v==(v=='edit'?'new':v)));if(v=='edit')growAll();scrollTo(0,0)}
+function show(v){['list','edit','set','exp'].forEach(i=>$(i).classList.toggle('on',i==v));
+ document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v==(v=='edit'?'new':v=='exp'?'list':v)));if(v=='edit')growAll();scrollTo(0,0)}
 function go(n){[1,2,3].forEach(i=>$('s'+i).classList.toggle('on',i==n));growAll();scrollTo(0,0)}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{const v=b.dataset.v;if(v=='new')newDoc();else if(v=='list'){renderList();show('list')}else if(isAdmin()){fillSet();show('set')}});
 
@@ -181,10 +181,11 @@ $('dl').onclick=()=>pdf({...collect(),no:$('num').value});
 const SF={brand:'st_brand',sub:'st_sub',name:'st_name',addr:'st_addr',tel:'st_tel',mob:'st_mob',email:'st_email',web:'st_web',vatno:'st_vatno',vat:'st_vat',next:'st_next',suf:'st_suf',subjects:'st_subjects'};
 async function loadSettings(){const{data}=await sb.from('app_settings').select('*').eq('id',1).single();if(data)S={...DS,...(data.data||{}),next:data.next_no,suf:data.suffix};setTitle()}
 function setTitle(){const t=(S.name?S.name+' - ':'')+'Job Sheets';$('ttl').textContent=t;document.title=t}
-async function fillSet(){await loadSettings();const a=isAdmin();for(const k in SF){$(SF[k]).value=S[k];$(SF[k]).disabled=!a}$('lgp').src=S.logo||DEFAULT_LOGO;$('lgf').disabled=$('lgr').disabled=!a;$('ssv').style.display=a?'block':'none';$('sm').textContent=a?'':'Only administrators can change settings.';if(a)loadUsers()}
+async function fillSet(){await loadSettings();const a=isAdmin();for(const k in SF){$(SF[k]).value=S[k];$(SF[k]).disabled=!a}$('lgp').src=S.logo||DEFAULT_LOGO;$('lgf').disabled=$('lgb').disabled=$('lgr').disabled=!a;$('ssv').style.display=a?'block':'none';$('sm').textContent=a?'':'Only administrators can change settings.';if(a)loadUsers()}
 $('ssv').onclick=async()=>{const n={};for(const k in SF)n[k]=V(SF[k]);const{next,suf,...rest}=n;rest.logo=S.logo||'';
  const{error}=await sb.from('app_settings').update({data:rest,next_no:parseInt(next)||1,suffix:suf}).eq('id',1);
  $('sm').textContent=error?error.message:'Settings saved.';if(!error){S={...DS,...rest,next:parseInt(next)||1,suf};setTitle()}};
+$('lgb').onclick=()=>$('lgf').click();
 $('lgf').onchange=e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const fr=new FileReader();
  fr.onload=()=>{const i=new Image();i.onload=()=>{const r=Math.min(1,500/i.height),c=document.createElement('canvas');c.width=Math.round(i.width*r);c.height=Math.round(i.height*r);c.getContext('2d').drawImage(i,0,0,c.width,c.height);S.logo=c.toDataURL('image/png');$('lgp').src=S.logo;$('sm').textContent='Logo changed. Press “Save settings” to keep it.'};i.onerror=()=>alert('Could not read this image.');i.src=fr.result};fr.readAsDataURL(f)};
 $('lgr').onclick=()=>{S.logo='';$('lgp').src=DEFAULT_LOGO;$('sm').textContent='Default logo selected. Press “Save settings” to keep it.'};
@@ -198,10 +199,25 @@ $('ul').onchange=async e=>{const r=e.target.closest('[data-u]');if(!r)return;con
 /* ---------- export / import ---------- */
 async function out(name,data,mime){
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:mime}));a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
-$('ex').onclick=async e=>{e.target.disabled=true;
- const{data,error}=await sb.from('documents').select('no,type,client,tech,ext,created_at,updated_at,'+['date','addr','tel','vat','subj','price','inst','pay','rows','vr','mat','tin','tout','rec','rp','cn','cid'].map(k=>k+':data->'+k).join(',')).order('created_at').limit(5000);e.target.disabled=false;
- if(error){alert(error.message);return}
- out('jobsheets-'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify({app:'jobsheets',v:3,docs:data}),'application/json')};
+const EXSEL='no,type,client,tech,ext,created_at,updated_at,'+['date','addr','tel','vat','subj','price','inst','pay','rows','vr','mat','tin','tout','rec','rp','cn','cid'].map(k=>k+':data->'+k).join(',');
+let exSel=new Set(),exData=[],eqt;
+const updEx=()=>{$('edo').textContent='Export selected ('+exSel.size+')';$('edo').disabled=!exSel.size};
+function renderEx(){$('el').innerHTML=exData.map(d=>'<label class="ei"><input type="checkbox" data-id="'+d.id+'"'+(exSel.has(d.id)?' checked':'')+'><span><b>'+esc(d.no)+'</b> · '+esc(d.client||'(no client)')+'<br><small>'+['Job Sheet','Invoice','Cash Sale'][d.type]+' · '+fD(d.doc_date)+'</small></span></label>').join('')||'<p class="m">No documents.</p>';updEx()}
+async function exLoad(){const q=V('eq').trim().replace(/[%,()*\\]/g,' ');
+ let r=sb.from('documents').select('id,no,client,doc_date,type').order('updated_at',{ascending:false}).limit(1000);
+ if(q)r=r.or('client.ilike.%'+q+'%,no.ilike.%'+q+'%');
+ const{data,error}=await r;if(error){$('el').innerHTML='<p class="m er">'+esc(error.message)+'</p>';return}
+ exData=data;renderEx()}
+$('ex').onclick=()=>{if(!isAdmin())return;exSel=new Set();$('eq').value='';show('exp');exLoad()};
+$('el').onchange=e=>{const id=e.target.dataset.id;if(!id)return;e.target.checked?exSel.add(id):exSel.delete(id);updEx()};
+$('esa').onclick=()=>{exData.forEach(d=>exSel.add(d.id));renderEx()};
+$('esn').onclick=()=>{exSel.clear();renderEx()};
+$('eq').oninput=()=>{clearTimeout(eqt);eqt=setTimeout(exLoad,300)};
+$('ecc').onclick=()=>show('list');
+$('edo').onclick=async e=>{const ids=[...exSel];if(!ids.length||!isAdmin())return;e.target.disabled=true;const docs=[];
+ for(let i=0;i<ids.length;i+=100){const{data,error}=await sb.from('documents').select(EXSEL).in('id',ids.slice(i,i+100)).order('created_at');
+  if(error){alert(error.message);updEx();return}docs.push(...data)}
+ out('jobsheets-'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify({app:'jobsheets',v:3,docs}),'application/json');updEx();show('list')};
 $('im').onclick=()=>$('imf').click();
 $('imf').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
  try{const j=JSON.parse(await f.text());const a=Array.isArray(j)?j:j.docs;if(!Array.isArray(a))throw new Error('bad');

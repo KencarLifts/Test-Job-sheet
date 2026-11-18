@@ -48,11 +48,22 @@
 <input id="q" type="search" placeholder="Search by client or number">
 <p class="m" id="exf" style="display:none"></p>
 <div class="ab" id="exim" style="margin:10px 0">
-<button class="s" id="ex" type="button">Export all</button>
+<button class="s" id="ex" type="button">Export…</button>
 <button class="s" id="im" type="button">Import</button>
 <input id="imf" type="file" accept=".json,application/json" hidden>
 </div>
 <div id="docs"></div>
+</div>
+
+<div id="exp" class="v">
+<div class="box">
+<h2>Export documents</h2>
+<input id="eq" type="search" placeholder="Filter by client or number">
+<div class="ab" style="margin:10px 0"><button class="s" id="esa" type="button">Select all</button><button class="s" id="esn" type="button">Select none</button></div>
+<div id="el"></div>
+<button id="edo" type="button">Export selected (0)</button>
+<button class="s" id="ecc" type="button">Cancel</button>
+</div>
 </div>
 
 <div id="edit" class="v">
@@ -127,7 +138,7 @@
 <div id="set" class="v">
 <div class="box">
 <h2>Logo</h2>
-<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><img id="lgp" alt="Logo" style="height:90px;background:#fff;border:1px solid var(--bd);border-radius:8px;padding:4px"><div style="flex:1 1 180px;min-width:0"><input id="lgf" type="file" accept="image/*"><button class="s" id="lgr" type="button">Use default logo</button></div></div>
+<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><img id="lgp" alt="Logo" style="height:90px;background:#fff;border:1px solid var(--bd);border-radius:8px;padding:4px"><div style="flex:1 1 180px;min-width:0"><input id="lgf" type="file" accept="image/*" hidden><button class="s" id="lgb" type="button" style="margin-top:0">Change logo</button><button class="s" id="lgr" type="button">Use default logo</button></div></div>
 <p class="m">The logo is shown in the top left corner of the PDF. Press “Save settings” after changing it.</p>
 <h2>Company</h2>
 <div class="g"><div><label>Header text</label><input id="st_brand"></div><div><label>Header subtitle</label><input id="st_sub"></div></div>
