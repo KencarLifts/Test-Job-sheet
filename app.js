@@ -10,7 +10,7 @@ const fD=v=>{if(!v)return'';const[a,b,c]=v.split('-');return c+'/'+b+'/'+a};
 const tot=d=>{const s=d.rows.reduce((a,r)=>a+(parseFloat(r.a)||0),0),v=s*(parseFloat(d.vr)||0)/100;return{s,v,t:s+v}};
 const scr=n=>['cfg','auth','rec','wait','app'].forEach(i=>$(i).classList.toggle('on',i==n));
 const isAdmin=()=>me&&me.approved&&me.role=='admin';
-const mine=(author,tech)=>isAdmin()||author==me.id||!!(tech&&[me.full_name,me.email].filter(Boolean).map(s=>s.trim().toLowerCase()).includes(String(tech).trim().toLowerCase()));
+const mine=(author,tech)=>isAdmin()||!!(tech&&[me.full_name,me.email].filter(Boolean).map(s=>s.trim().toLowerCase()).includes(String(tech).trim().toLowerCase()));
 
 /* ---------- auth ---------- */
 function fail(m){$('cfgt').textContent='Error';$('cfgm').textContent=m;scr('cfg')}
@@ -194,7 +194,6 @@ $('lgb').onclick=()=>$('lgf').click();
 $('lgf').onchange=e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const fr=new FileReader();
  fr.onload=()=>{const i=new Image();i.onload=()=>{const r=Math.min(1,500/i.height),c=document.createElement('canvas');c.width=Math.round(i.width*r);c.height=Math.round(i.height*r);c.getContext('2d').drawImage(i,0,0,c.width,c.height);S.logo=c.toDataURL('image/png');$('lgp').src=S.logo;$('sm').textContent='Logo changed. Press “Save settings” to keep it.'};i.onerror=()=>alert('Could not read this image.');i.src=fr.result};fr.readAsDataURL(f)};
 $('lgr').onclick=()=>{S.logo='';$('lgp').src=DEFAULT_LOGO;$('sm').textContent='Default logo selected. Press “Save settings” to keep it.'};
-$('fxa').onclick=async e=>{e.target.disabled=true;const{data,error}=await sb.rpc('fix_doc_authors');e.target.disabled=false;alert(error?error.message:data+' document(s) assigned to their technicians.')};
 async function loadUsers(){const{data,error}=await sb.from('profiles').select('id,email,full_name,role,approved').order('created_at');
  if(error){$('ul').innerHTML='<p class="m er">'+esc(error.message)+'</p>';return}
  $('ul').innerHTML=data.map(u=>'<div class="ul" data-u="'+u.id+'"><span><input data-f="full_name" placeholder="Full name" value="'+esc(u.full_name||'')+'"><small>'+esc(u.email)+'</small></span><select data-f="role"><option'+(u.role=='technician'?' selected':'')+'>technician</option><option'+(u.role=='admin'?' selected':'')+'>admin</option></select><label class="ck" style="margin:0"><input type="checkbox" data-f="approved"'+(u.approved?' checked':'')+(u.id==me.id?' disabled':'')+'>OK</label></div>').join('')}

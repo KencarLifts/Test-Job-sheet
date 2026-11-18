@@ -1,9 +1,15 @@
--- Run once in Supabase SQL Editor (existing projects)
-create or replace function public.is_mine(doc_author uuid, doc_tech text) returns boolean language sql stable security definer set search_path=public as
-$$ select coalesce((select p.approved and (doc_author=p.id or (btrim(coalesce(doc_tech,''))<>'' and lower(btrim(doc_tech)) in (lower(btrim(coalesce(p.full_name,''))), lower(btrim(coalesce(p.email,'')))))) from profiles p where p.id=auth.uid()),false) $$;
+-- Run once in Supabase SQL Editor (existing projects). Replaces earlier document policies.
 drop policy if exists "docs read" on public.documents;
+drop policy if exists "docs insert" on public.documents;
 drop policy if exists "docs update" on public.documents;
--- administrators see everything; a technician sees only documents created by him or assigned to him (Technician name)
-create policy "docs read" on public.documents for select to authenticated using (is_admin() or is_mine(created_by,tech));
+create or replace function public.is_assigned(doc_tech text) returns boolean language sql stable security definer set search_path=public as
+$$ select coalesce((select p.approved and btrim(coalesce(doc_tech,''))<>'' and lower(btrim(doc_tech)) in (lower(btrim(coalesce(p.full_name,''))), lower(btrim(coalesce(p.email,'')))) from profiles p where p.id=auth.uid()),false) $$;
+-- Administrators see and edit everything. A technician sees and edits only documents whose
+-- "Technician" is that technician (matches his full name or email). The author does not matter.
+create policy "docs read" on public.documents for select to authenticated using (is_admin() or is_assigned(tech));
+create policy "docs insert" on public.documents for insert to authenticated
+  with check (is_admin() or (is_approved() and created_by=auth.uid() and is_assigned(tech)));
 create policy "docs update" on public.documents for update to authenticated
-  using (is_admin() or is_mine(created_by,tech)) with check (is_admin() or is_mine(created_by,tech));
+  using (is_admin() or is_assigned(tech)) with check (is_admin() or is_assigned(tech));
+drop function if exists public.is_mine(uuid, text);
+drop function if exists public.fix_doc_authors();
