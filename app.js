@@ -257,7 +257,7 @@ lf('Client:',d.client,368,590,80);lf('Address:','',408,590,80);const aw=x.measur
 const AD=addrLines(x,d.addr,()=>590-as-10,3);AD.lines.forEach((l,i)=>T(l,as+6,[405,445,485][i],AD.fs,false,'#0a1a6e'));
 L(as,448,590,448,1,'#999');L(as,488,590,488,1,'#999');
 lf('Telephone:',d.tel,528,590,80);lf('Vat No:',d.vat,568,590,80);lf('Subject:','',608,590,80);const sw=x.measureText('Subject:').width,ss=80+sw+12;
-const SJ=fitLines(x,d.subj,i=>i?1080:590-ss-10,2);SJ.lines.forEach((l,i)=>T(l,i?86:ss+6,[605,645][i],SJ.fs,false,'#0a1a6e'));L(80,648,1170,648,1,'#999');
+const SJ=fitLines(x,d.subj,i=>i?1170-ss-16:590-ss-10,2);SJ.lines.forEach((l,i)=>T(l,ss+6,[605,645][i],SJ.fs,false,'#0a1a6e'));L(ss,648,1170,648,1,'#999');
 lf('Date:',fD(d.date),448,1170,640);lf('Price:',d.price,488,1170,640);lf('App. Inst. Date:',fD(d.inst),528,1170,640);
 T('PAYMENT:',640,574,23,true);T('Warranty',770,574,23);CK(865,546,d.pay==0);T('Cash',930,574,23);CK(985,546,d.pay==1);T('Invoice',1050,574,23);CK(1130,546,d.pay==2);
 x.fillStyle=B;x.fillRect(78,690,1092,80);T('JOB DESCRIPTION',98,742,26,true,'#fff');T('AMOUNT',1148,740,26,true,'#fff','right');
