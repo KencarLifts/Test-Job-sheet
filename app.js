@@ -203,7 +203,7 @@ $('ul').onchange=async e=>{const r=e.target.closest('[data-u]');if(!r)return;con
 /* ---------- export / import ---------- */
 async function out(name,data,mime){
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:mime}));a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
-const EXSEL='no,type,client,tech,ext,created_at,updated_at,'+['date','addr','tel','vat','subj','price','inst','pay','rows','vr','mat','tin','tout','rec','rp','cn','cid'].map(k=>k+':data->'+k).join(',');
+const EXSEL='no,type,client,tech,ext,created_at,updated_at,'+['date','addr','tel','vat','subj','price','inst','pay','rows','vr','mat','tin','tout','rec','rp','cn','cid'].map(k=>k+':data->'+k).join(',')+',s1:data->>s1,s2:data->>s2';
 let exSel=new Set(),exData=[],eqt;
 const updEx=()=>{$('edo').textContent='Export selected ('+exSel.size+')';$('edo').disabled=!exSel.size};
 function renderEx(){$('el').innerHTML=exData.map(d=>'<label class="ei"><input type="checkbox" data-id="'+d.id+'"'+(exSel.has(d.id)?' checked':'')+'><span><b>'+esc(d.no)+'</b> · '+esc(d.client||'(no client)')+'<br><small>'+['Job Sheet','Invoice','Cash Sale'][d.type]+' · '+fD(d.doc_date)+'</small></span></label>').join('')||'<p class="m">No documents.</p>';updEx()}
@@ -221,7 +221,9 @@ $('ecc').onclick=()=>show('list');
 $('edo').onclick=async e=>{const ids=[...exSel];if(!ids.length||!isAdmin())return;e.target.disabled=true;const docs=[];
  for(let i=0;i<ids.length;i+=100){const{data,error}=await sb.from('documents').select(EXSEL).in('id',ids.slice(i,i+100)).order('created_at');
   if(error){alert(error.message);updEx();return}docs.push(...data)}
- out('jobsheets-'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify({app:'jobsheets',v:3,docs}),'application/json');updEx();show('list')};
+ const fn=t=>String(t||'').replace(/[^\p{L}\p{N}-]+/gu,'_').replace(/^_+|_+$/g,'').slice(0,80);
+ const name=docs.length==1?fn(docs[0].no+'_'+(docs[0].client||'')):fn(docs[0].no+'_'+new Date().toISOString().slice(0,10));
+ out((name||'jobsheets')+'.json',JSON.stringify({app:'jobsheets',v:4,docs}),'application/json');updEx();show('list')};
 $('im').onclick=()=>$('imf').click();
 $('imf').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
  try{const j=JSON.parse(await f.text());const a=Array.isArray(j)?j:j.docs;if(!Array.isArray(a))throw new Error('bad');
